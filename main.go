@@ -16,6 +16,84 @@ import (
 	"github.com/nguyendangkin/progress-chin/progress"
 )
 
+// ANSI color codes for beautiful terminal output
+const (
+	ColorReset  = "\033[0m"
+	ColorRed    = "\033[31m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorBlue   = "\033[34m"
+	ColorPurple = "\033[35m"
+	ColorCyan   = "\033[36m"
+	ColorWhite  = "\033[37m"
+	ColorBold   = "\033[1m"
+	ColorDim    = "\033[2m"
+)
+
+// Beautiful logging functions
+func logInfo(message string, args ...interface{}) {
+	fmt.Printf("%s[INFO]%s %s%s%s\n", ColorBlue+ColorBold, ColorReset, ColorWhite, fmt.Sprintf(message, args...), ColorReset)
+}
+
+func logSuccess(message string, args ...interface{}) {
+	fmt.Printf("%s[SUCCESS]%s %s%s%s\n", ColorGreen+ColorBold, ColorReset, ColorGreen, fmt.Sprintf(message, args...), ColorReset)
+}
+
+func logWarning(message string, args ...interface{}) {
+	fmt.Printf("%s[WARNING]%s %s%s%s\n", ColorYellow+ColorBold, ColorReset, ColorYellow, fmt.Sprintf(message, args...), ColorReset)
+}
+
+func logError(message string, args ...interface{}) {
+	fmt.Printf("%s[ERROR]%s %s%s%s\n", ColorRed+ColorBold, ColorReset, ColorRed, fmt.Sprintf(message, args...), ColorReset)
+}
+
+func logHeader(message string, args ...interface{}) {
+	fmt.Printf("\n%s%s═══════════════════════════════════════════════════════════════%s\n", ColorCyan+ColorBold, ColorWhite, ColorReset)
+	fmt.Printf("%s%s  %s%s\n", ColorCyan+ColorBold, ColorWhite, fmt.Sprintf(message, args...), ColorReset)
+	fmt.Printf("%s%s═══════════════════════════════════════════════════════════════%s\n\n", ColorCyan+ColorBold, ColorWhite, ColorReset)
+}
+
+func logSubHeader(message string, args ...interface{}) {
+	fmt.Printf("\n%s%s── %s ──%s\n", ColorPurple+ColorBold, ColorWhite, fmt.Sprintf(message, args...), ColorReset)
+}
+
+func logDetail(label, value string) {
+	fmt.Printf("%s  ▸ %s:%s %s%s%s\n", ColorDim, label, ColorReset, ColorWhite, value, ColorReset)
+}
+
+func printUsage() {
+	logHeader("🗜️  CHIN COMPRESSOR - Usage Guide")
+
+	fmt.Printf("%s  📦 Compress single:%s     chin <file/folder>\n", ColorGreen+ColorBold, ColorReset)
+	fmt.Printf("%s  📦 Compress multiple:%s   chin <file1> <file2> <folder1> ...\n", ColorGreen+ColorBold, ColorReset)
+	fmt.Printf("%s  📦 Compress with split:%s chin -mb 1000 <file/folder>\n", ColorGreen+ColorBold, ColorReset)
+	fmt.Printf("%s  📂 Decompress:%s          chin <file.chin> or chin <file-1.chin>\n", ColorBlue+ColorBold, ColorReset)
+
+	fmt.Printf("\n%s  Options:%s\n", ColorYellow+ColorBold, ColorReset)
+	fmt.Printf("    %s-mb <size>%s  Split output into chunks of <size> MB\n", ColorCyan, ColorReset)
+	fmt.Println()
+}
+
+func formatFileSize(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.2f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func formatDuration(d time.Duration) string {
+	if d.Seconds() < 1 {
+		return fmt.Sprintf("%.0fms", d.Seconds()*1000)
+	}
+	return fmt.Sprintf("%.2fs", d.Seconds())
+}
+
 func main() {
 	// Manual argument parsing to handle -mb flag properly
 	var maxSizeMB int
@@ -26,13 +104,13 @@ func main() {
 		arg := os.Args[i]
 		if arg == "-mb" {
 			if i+1 >= len(os.Args) {
-				fmt.Println("Error: -mb flag requires a value")
+				logError("Flag -mb requires a value")
 				return
 			}
 			var err error
 			maxSizeMB, err = strconv.Atoi(os.Args[i+1])
 			if err != nil {
-				fmt.Printf("Error: invalid value for -mb: %s\n", os.Args[i+1])
+				logError("Invalid value for -mb: %s", os.Args[i+1])
 				return
 			}
 			i++ // Skip the next argument as it's the value for -mb
@@ -42,47 +120,61 @@ func main() {
 	}
 
 	if len(sources) < 1 {
-		fmt.Println("Usage:")
-		fmt.Println("  Compress single:     chin <file/folder>")
-		fmt.Println("  Compress multiple:   chin <file1> <file2> <folder1> ...")
-		fmt.Println("  Compress with split: chin -mb 1000 <file/folder>")
-		fmt.Println("  Decompress:          chin <file.chin> or chin <file-1.chin>")
+		printUsage()
 		return
 	}
 
 	// Check if this is decompression
 	firstArg := sources[0]
 	if strings.HasSuffix(firstArg, ".chin") {
-		fmt.Println("Starting decompression...")
+		logHeader("📂 DECOMPRESSION MODE")
+		logDetail("Input file", firstArg)
+
 		start := time.Now()
 		err := decompress(firstArg)
 		duration := time.Since(start)
+
 		if err != nil {
-			fmt.Printf("\nDecompression error: %v\n", err)
+			logError("Decompression failed: %v", err)
 		} else {
-			fmt.Printf("\nDecompression completed! (%.2fs)\n", duration.Seconds())
+			logSuccess("✅ Decompression completed successfully!")
+			logDetail("Duration", formatDuration(duration))
 		}
 		return
 	}
 
 	// Compression mode
-	fmt.Println("Starting compression...")
-	start := time.Now()
+	logHeader("📦 COMPRESSION MODE")
 
-	var err error
+	if maxSizeMB > 0 {
+		logDetail("Split size", fmt.Sprintf("%d MB", maxSizeMB))
+	}
+
 	if len(sources) == 1 {
-		// Single file/folder compression
+		logDetail("Source", sources[0])
+	} else {
+		logDetail("Sources", fmt.Sprintf("%d items", len(sources)))
+		for i, src := range sources {
+			fmt.Printf("%s    %d. %s%s\n", ColorDim, i+1, src, ColorReset)
+		}
+	}
+
+	start := time.Now()
+	var err error
+
+	if len(sources) == 1 {
 		err = compress(sources[0], maxSizeMB)
 	} else {
-		// Multiple files/folders compression
 		err = compressMultiple(sources, maxSizeMB)
 	}
 
 	duration := time.Since(start)
+
 	if err != nil {
-		fmt.Printf("\nCompression error: %v\n", err)
+		logError("Compression failed: %v", err)
 	} else {
-		fmt.Printf("\nCompression completed! (%.2fs)\n", duration.Seconds())
+		logSuccess("✅ Compression completed successfully!")
+		logDetail("Duration", formatDuration(duration))
 	}
 }
 
@@ -102,10 +194,21 @@ func compress(src string, maxSizeMB int) error {
 		outFile = strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())) + ".chin"
 	}
 
+	logSubHeader("📁 Analyzing source")
+	if info.IsDir() {
+		logDetail("Type", "Directory")
+	} else {
+		logDetail("Type", "File")
+		logDetail("Size", formatFileSize(info.Size()))
+	}
+	logDetail("Output", outFile)
+
 	if maxSizeMB > 0 {
+		logInfo("🔄 Starting compression with splitting...")
 		return compressWithSplit(src, outFile, maxSizeMB)
 	}
 
+	logInfo("🔄 Starting compression...")
 	return compressToFile(src, outFile)
 }
 
@@ -120,10 +223,15 @@ func compressMultiple(sources []string, maxSizeMB int) error {
 	// Always place output in current directory
 	outFile := firstItem + "-all.chin"
 
+	logSubHeader("📁 Analyzing sources")
+	logDetail("Output", outFile)
+
 	if maxSizeMB > 0 {
+		logInfo("🔄 Starting multi-source compression with splitting...")
 		return compressMultipleWithSplit(sources, outFile, maxSizeMB)
 	}
 
+	logInfo("🔄 Starting multi-source compression...")
 	return compressMultipleToFile(sources, outFile)
 }
 
@@ -150,6 +258,8 @@ func compressToFile(src, outFile string) error {
 		}
 		return nil
 	})
+
+	logInfo("📊 Found %d entries to compress", totalEntries)
 	progressBar := progress.NewProgressBar(totalEntries)
 
 	return filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
@@ -196,18 +306,23 @@ func compressMultipleToFile(sources []string, outFile string) error {
 		})
 	}
 
+	logInfo("📊 Found %d entries across all sources", totalEntries)
 	progressBar := progress.NewProgressBar(totalEntries)
 
 	// Process each source - keep original structure
-	for _, src := range sources {
-		// For multiple sources, use the source path as-is to preserve structure
+	for i, src := range sources {
+		// Only log once at the beginning, not for each source
+		if i == 0 {
+			logInfo("🔄 Processing all sources...")
+		}
+
 		srcInfo, err := os.Stat(src)
 		if err != nil {
+			logWarning("Cannot access source: %s", src)
 			continue
 		}
 
 		if srcInfo.IsDir() {
-			// For directories, walk and preserve the full path structure
 			err := filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
 				if err != nil {
 					return err
@@ -217,7 +332,6 @@ func compressMultipleToFile(sources []string, outFile string) error {
 					return nil
 				}
 
-				// Use the full path relative to current directory to preserve structure
 				relPath, _ := filepath.Rel(".", path)
 
 				if err := writeEntry(f, relPath, path, info); err != nil {
@@ -231,7 +345,6 @@ func compressMultipleToFile(sources []string, outFile string) error {
 				return err
 			}
 		} else {
-			// For files, use the path relative to current directory
 			relPath, _ := filepath.Rel(".", src)
 			if err := writeEntry(f, relPath, src, srcInfo); err != nil {
 				return err
@@ -245,7 +358,8 @@ func compressMultipleToFile(sources []string, outFile string) error {
 
 // ------------------- Compress with Split -------------------
 func compressWithSplit(src, outFile string, maxSizeMB int) error {
-	// Create temporary buffer to collect all data
+	logInfo("📦 Collecting data for splitting...")
+
 	var buf bytes.Buffer
 	absOutFile, _ := filepath.Abs(outFile)
 	baseDir := filepath.Dir(src)
@@ -262,9 +376,10 @@ func compressWithSplit(src, outFile string, maxSizeMB int) error {
 		}
 		return nil
 	})
+
+	logInfo("📊 Found %d entries to compress", totalEntries)
 	progressBar := progress.NewProgressBar(totalEntries)
 
-	// Collect all data first
 	err := filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -287,13 +402,14 @@ func compressWithSplit(src, outFile string, maxSizeMB int) error {
 		return err
 	}
 
-	// Split the data into multiple files
+	logInfo("✂️ Splitting data into %d MB chunks...", maxSizeMB)
 	return splitDataToFiles(buf.Bytes(), outFile, maxSizeMB)
 }
 
 // ------------------- Compress Multiple with Split -------------------
 func compressMultipleWithSplit(sources []string, outFile string, maxSizeMB int) error {
-	// Create temporary buffer to collect all data
+	logInfo("📦 Collecting data from multiple sources...")
+
 	var buf bytes.Buffer
 	absOutFile, _ := filepath.Abs(outFile)
 
@@ -312,17 +428,22 @@ func compressMultipleWithSplit(sources []string, outFile string, maxSizeMB int) 
 		})
 	}
 
+	logInfo("📊 Found %d entries across all sources", totalEntries)
 	progressBar := progress.NewProgressBar(totalEntries)
 
-	// Process each source and collect data - preserve structure
-	for _, src := range sources {
+	for i, src := range sources {
+		// Only log once at the beginning, not for each source
+		if i == 0 {
+			logInfo("🔄 Processing all sources...")
+		}
+
 		srcInfo, err := os.Stat(src)
 		if err != nil {
+			logWarning("Cannot access source: %s", src)
 			continue
 		}
 
 		if srcInfo.IsDir() {
-			// For directories, walk and preserve the full path structure
 			err := filepath.Walk(src, func(path string, info fs.FileInfo, err error) error {
 				if err != nil {
 					return err
@@ -332,7 +453,6 @@ func compressMultipleWithSplit(sources []string, outFile string, maxSizeMB int) 
 					return nil
 				}
 
-				// Use the full path relative to current directory to preserve structure
 				relPath, _ := filepath.Rel(".", path)
 
 				if err := writeEntry(&buf, relPath, path, info); err != nil {
@@ -346,7 +466,6 @@ func compressMultipleWithSplit(sources []string, outFile string, maxSizeMB int) 
 				return err
 			}
 		} else {
-			// For files, use the path relative to current directory
 			relPath, _ := filepath.Rel(".", src)
 			if err := writeEntry(&buf, relPath, src, srcInfo); err != nil {
 				return err
@@ -355,7 +474,7 @@ func compressMultipleWithSplit(sources []string, outFile string, maxSizeMB int) 
 		}
 	}
 
-	// Split the data into multiple files
+	logInfo("✂️ Splitting data into %d MB chunks...", maxSizeMB)
 	return splitDataToFiles(buf.Bytes(), outFile, maxSizeMB)
 }
 
@@ -402,11 +521,15 @@ func writeEntry(writer interface{}, relPath, fullPath string, info fs.FileInfo) 
 }
 
 func splitDataToFiles(data []byte, outFile string, maxSizeMB int) error {
-	maxSize := maxSizeMB * 1024 * 1024 // Convert MB to bytes
+	maxSize := maxSizeMB * 1024 * 1024
 	totalSize := len(data)
-	parts := (totalSize + maxSize - 1) / maxSize // Ceiling division
+	parts := (totalSize + maxSize - 1) / maxSize
 
 	baseFileName := strings.TrimSuffix(outFile, ".chin")
+
+	logSubHeader("✂️ Creating split files")
+	logDetail("Total size", formatFileSize(int64(totalSize)))
+	logDetail("Parts to create", fmt.Sprintf("%d", parts))
 
 	for i := 0; i < parts; i++ {
 		partFileName := fmt.Sprintf("%s-%d.chin", baseFileName, i+1)
@@ -422,7 +545,8 @@ func splitDataToFiles(data []byte, outFile string, maxSizeMB int) error {
 			return err
 		}
 
-		fmt.Printf("\nCreated part %d/%d: %s (%.2f MB)\n", i+1, parts, partFileName, float64(len(partData))/1024/1024)
+		logSuccess("📦 Created part %d/%d: %s (%s)",
+			i+1, parts, partFileName, formatFileSize(int64(len(partData))))
 	}
 
 	return nil
@@ -430,24 +554,30 @@ func splitDataToFiles(data []byte, outFile string, maxSizeMB int) error {
 
 // ------------------- Decompress Data -------------------
 func decompress(src string) error {
-	// Check if this is a split file (ends with -1.chin, -2.chin, etc.)
+	// Check if this is a split file
 	if matched, _ := regexp.MatchString(`-\d+\.chin$`, src); matched {
+		logInfo("🔍 Detected split archive format")
 		return decompressSplit(src)
 	}
 
+	logInfo("🔍 Detected regular archive format")
 	return decompressRegular(src)
 }
 
 func decompressRegular(src string) error {
+	logInfo("📖 Reading archive file...")
 	data, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
+	logDetail("Archive size", formatFileSize(int64(len(data))))
 	return processDecompression(data)
 }
 
 func decompressSplit(src string) error {
+	logSubHeader("🔍 Locating split archive parts")
+
 	// Extract base filename and find all parts
 	re := regexp.MustCompile(`(.+)-(\d+)\.chin$`)
 	matches := re.FindStringSubmatch(src)
@@ -491,18 +621,15 @@ func decompressSplit(src string) error {
 		return numI < numJ
 	})
 
-	// Sort part numbers to check for missing parts
 	sort.Ints(partNumbers)
 
-	// Check for missing parts
-	fmt.Printf("Found %d part files\n", len(partFiles))
+	logSuccess("🔍 Found %d part files", len(partFiles))
 
-	// Verify all parts are consecutive starting from 1
+	// Check for missing parts
 	for i, partNum := range partNumbers {
 		expectedNum := i + 1
 		if partNum != expectedNum {
 			if partNum > expectedNum {
-				// Missing parts before this one
 				var missingParts []int
 				for j := expectedNum; j < partNum; j++ {
 					missingParts = append(missingParts, j)
@@ -512,40 +639,14 @@ func decompressSplit(src string) error {
 		}
 	}
 
-	// Check if we might be missing parts at the end by examining the last part
-	// This is a heuristic check - if the last part is suspiciously large, we might be missing parts
-	lastPartFile := partFiles[len(partFiles)-1]
-	lastPartInfo, err := os.Stat(lastPartFile)
-	if err != nil {
-		return fmt.Errorf("cannot stat last part file: %v", err)
-	}
-
-	// If we have multiple parts, check if all parts (except possibly the last) are similar in size
-	if len(partFiles) > 1 {
-		firstPartInfo, err := os.Stat(partFiles[0])
-		if err != nil {
-			return fmt.Errorf("cannot stat first part file: %v", err)
-		}
-
-		firstPartSize := firstPartInfo.Size()
-		lastPartSize := lastPartInfo.Size()
-
-		// If the last part is significantly larger than the first part,
-		// it might indicate missing parts (this is just a warning, not an error)
-		if lastPartSize > firstPartSize*2 {
-			fmt.Printf("Warning: Last part (%s) is significantly larger than first part.\n", filepath.Base(lastPartFile))
-			fmt.Printf("This might indicate missing part files. Proceeding with available parts...\n")
-		}
-	}
-
-	// Additional check: Try to read a small portion of each part to ensure they're valid
+	// Verify parts integrity
+	logInfo("🔍 Verifying parts integrity...")
 	for i, partFile := range partFiles {
 		file, err := os.Open(partFile)
 		if err != nil {
 			return fmt.Errorf("cannot open part file %s: %v", filepath.Base(partFile), err)
 		}
 
-		// Try to read first few bytes to ensure file is readable
 		buffer := make([]byte, 10)
 		_, err = file.Read(buffer)
 		file.Close()
@@ -554,26 +655,37 @@ func decompressSplit(src string) error {
 			return fmt.Errorf("cannot read part file %s: %v", filepath.Base(partFile), err)
 		}
 
-		fmt.Printf("Verified part %d/%d: %s\n", i+1, len(partFiles), filepath.Base(partFile))
+		info, _ := os.Stat(partFile)
+		logDetail(fmt.Sprintf("Part %d", i+1), fmt.Sprintf("%s (%s)",
+			filepath.Base(partFile), formatFileSize(info.Size())))
 	}
 
-	// Combine all parts
+	// Combine all parts with single progress bar
+	logInfo("🔗 Combining archive parts...")
 	var combinedData []byte
-	for i, partFile := range partFiles {
-		fmt.Printf("Reading part %d/%d: %s\n", i+1, len(partFiles), filepath.Base(partFile))
+	var totalSize int64
+
+	// Create progress bar for combining parts
+	progressBar := progress.NewProgressBar(len(partFiles))
+
+	for _, partFile := range partFiles {
 		data, err := os.ReadFile(partFile)
 		if err != nil {
 			return fmt.Errorf("failed to read part file %s: %v", filepath.Base(partFile), err)
 		}
 		combinedData = append(combinedData, data...)
+		totalSize += int64(len(data))
+		progressBar.Increment()
 	}
 
-	fmt.Printf("Combined data size: %.2f MB\n", float64(len(combinedData))/1024/1024)
+	logSuccess("🔗 Combined archive size: %s", formatFileSize(totalSize))
 
 	return processDecompression(combinedData)
 }
 
 func processDecompression(data []byte) error {
+	logInfo("📊 Analyzing archive structure...")
+
 	buf := bytes.NewReader(data)
 	totalEntries := 0
 
@@ -584,7 +696,6 @@ func processDecompression(data []byte) error {
 			break
 		}
 
-		// Check if we can read the path
 		if int64(pathLen) > int64(buf.Len()) {
 			return fmt.Errorf("corrupted data: path length %d exceeds remaining data %d", pathLen, buf.Len())
 		}
@@ -596,7 +707,6 @@ func processDecompression(data []byte) error {
 			break
 		}
 
-		// Check if we can read the file data
 		if int64(dataLen) > int64(buf.Len()) {
 			return fmt.Errorf("corrupted data: file data length %d exceeds remaining data %d", dataLen, buf.Len())
 		}
@@ -609,10 +719,16 @@ func processDecompression(data []byte) error {
 		return fmt.Errorf("no valid entries found in the archive data")
 	}
 
+	logSuccess("📊 Found %d entries to extract", totalEntries)
+
 	buf = bytes.NewReader(data)
 	progressBar := progress.NewProgressBar(totalEntries)
 
 	entriesProcessed := 0
+	var extractedFiles, extractedDirs int
+
+	logInfo("📂 Extracting archive contents...")
+
 	for {
 		var pathLen uint16
 		if err := binary.Read(buf, binary.LittleEndian, &pathLen); err != nil {
@@ -636,6 +752,7 @@ func processDecompression(data []byte) error {
 			if err := os.MkdirAll(relPath, 0755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %v", relPath, err)
 			}
+			extractedDirs++
 		} else {
 			// File
 			fileData := make([]byte, dataLen)
@@ -651,6 +768,7 @@ func processDecompression(data []byte) error {
 			if err := os.WriteFile(relPath, fileData, 0644); err != nil {
 				return fmt.Errorf("failed to write file %s: %v", relPath, err)
 			}
+			extractedFiles++
 		}
 
 		progressBar.Increment()
@@ -660,8 +778,13 @@ func processDecompression(data []byte) error {
 	progressBar.Finish()
 
 	if entriesProcessed != totalEntries {
-		fmt.Printf("Warning: Expected %d entries but processed %d entries\n", totalEntries, entriesProcessed)
+		logWarning("Expected %d entries but processed %d entries", totalEntries, entriesProcessed)
 	}
+
+	logSubHeader("📈 Extraction Summary")
+	logDetail("Files extracted", fmt.Sprintf("%d", extractedFiles))
+	logDetail("Directories created", fmt.Sprintf("%d", extractedDirs))
+	logDetail("Total entries", fmt.Sprintf("%d", entriesProcessed))
 
 	return nil
 }
