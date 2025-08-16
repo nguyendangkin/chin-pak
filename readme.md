@@ -18,9 +18,11 @@ Một công cụ gói file và thư mục đơn giản, nhanh chóng được vi
 -   ✅ **Thanh tiến trình** hiển thị quá trình gói/giải gói
 -   ✅ **Đa nền tảng** (Windows, Linux, macOS)
 
-## Cài đặt\
+## Cài đặt
 
 ### Windows
+
+-   Mở terminal bằng quyền Admin và chạy lệnh sau:
 
 ```bash
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/nguyendangkin/chin-pak/main/install.ps1'))
