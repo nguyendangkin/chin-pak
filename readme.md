@@ -13,7 +13,8 @@ Một công cụ đóng gói và giải gói dữ liệu được viết bằng 
 
 ## 🚀 Cài đặt
 
--   Cho Windows
+-   Dành Cho Windows (64 bit)
+-   Mở Terminal dưới quyền Admin; chạy lệnh sau:
 
 ```bash
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/nguyendangkin/chin-pak/main/install.ps1'))
