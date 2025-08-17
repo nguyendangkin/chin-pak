@@ -13,11 +13,21 @@ Một công cụ đóng gói và giải gói dữ liệu được viết bằng 
 
 ## 🚀 Cài đặt
 
--   Dành Cho Windows (64 bit)
--   Mở Terminal dưới quyền Admin; chạy lệnh sau:
+1.  Dành Cho Windows (64 bit)
+
+-   Mở Terminal dưới quyền Admin và chạy lệnh sau:
 
 ```bash
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/nguyendangkin/chin-pak/main/install.ps1'))
+```
+
+2. Dành Cho Linux (64 bit)
+
+-   Mở Terminal và chạy lệnh sau:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/nguyendangkin/chin-pak/main/install.sh)"
+
 ```
 
 ## 📖 Hướng dẫn sử dụng
@@ -108,15 +118,6 @@ chin my-website.chin        # Giải gói file thông thường
 chin backup-data-1.chin     # Giải gói file đã chia nhỏ
 ```
 
-## 📋 Cấu trúc file .chin
-
-File .chin sử dụng format binary tùy chỉnh:
-
--   Header chứa độ dài đường dẫn (uint16)
--   Đường dẫn file/thư mục
--   Độ dài dữ liệu (uint32)
--   Dữ liệu file (nếu là file) hoặc 0 bytes (nếu là thư mục)
-
 ## 🎯 Tùy chọn dòng lệnh
 
 | Tùy chọn     | Mô tả                                                       | Ví dụ                  |
@@ -125,8 +126,7 @@ File .chin sử dụng format binary tùy chỉnh:
 
 ## 🔧 Yêu cầu hệ thống
 
--   Go 1.16 trở lên
--   Hệ điều hành: Windows, macOS, Linux
+-   Hệ điều hành 64: Windows, Linux
 -   Terminal hỗ trợ ANSI colors (cho hiển thị màu sắc)
 
 ## 📊 Thông tin hiển thị
@@ -152,16 +152,3 @@ Chương trình hiển thị các thông tin chi tiết:
 -   Xác minh cấu trúc dữ liệu trước khi giải gói
 -   Hiển thị thông báo lỗi chi tiết với màu sắc
 -   Tự động phát hiện file bị thiếu hoặc hỏng
-
-## 📞 Hỗ trợ
-
-Nếu gặp vấn đề, hãy kiểm tra:
-
-1. Quyền truy cập file/thư mục
-2. Dung lượng ổ đĩa còn trống
-3. Tính toàn vẹn của file .chin
-4. Đầy đủ các file phần (đối với file chia nhỏ)
-
----
-
-_CHIN Packer - Công cụ đóng gói dữ liệu mạnh mẽ và thân thiện với người dùng! 🚀_
