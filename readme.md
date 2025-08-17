@@ -1,127 +1,166 @@
-# Chin - Công cụ gói file và thư mục
+# 📦 CHIN PACKER
 
-Một công cụ gói file và thư mục đơn giản, nhanh chóng được viết bằng Go. Chin tạo ra các file gói với đuôi `.chin` và hỗ trợ chia nhỏ file lớn thành nhiều phần.
+Một công cụ đóng gói và giải gói dữ liệu được viết bằng Go, hỗ trợ đóng gói nhiều file/thư mục và chia nhỏ file đóng gói thành các phần.
 
--   Gói/giải gói cơ bản
--   Hỗ trợ chia nhỏ file
--   Progress bar
--   Phát hiện file thiếu
--   Kiểm tra tính toàn vẹn dữ liệu
+## ✨ Tính năng
 
-## Tính năng
+-   📦 **Đóng gói đơn lẻ**: Đóng gói một file hoặc thư mục
+-   📦 **Đóng gói nhiều mục**: Đóng gói nhiều file/thư mục cùng lúc
+-   ✂️ **Chia nhỏ file**: Chia file đóng gói thành các phần có kích thước tùy chỉnh
+-   📂 **Giải gói**: Giải gói file .chin hoặc các file đã chia nhỏ
+-   🎨 **Giao diện đẹp**: Hiển thị màu sắc và thanh tiến trình trong terminal
+-   ⚡ **Hiệu suất cao**: Xử lý nhanh với progress bar theo dõi tiến trình
 
--   ✅ **Gói file/thư mục đơn lẻ**
--   ✅ **Gói nhiều file/thư mục cùng lúc**
--   ✅ **Chia nhỏ file** khi dung lượng quá lớn
--   ✅ **Tự động giải gói** với kiểm tra tính toàn vẹn dữ liệu
--   ✅ **Phát hiện file bị thiếu** trong archive chia nhỏ
--   ✅ **Thanh tiến trình** hiển thị quá trình gói/giải gói
--   ✅ **Đa nền tảng** (Windows, Linux, macOS)
+## 🚀 Cài đặt
 
-## Cài đặt
-
-### Windows
-
--   Mở terminal bằng quyền Admin và chạy lệnh sau:
+-   Cho Windows
 
 ```bash
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/nguyendangkin/chin-pak/main/install.ps1'))
 ```
 
-### Gói file/thư mục đơn lẻ
+## 📖 Hướng dẫn sử dụng
+
+### Đóng gói dữ liệu
+
+#### Đóng gói một file hoặc thư mục:
 
 ```bash
-# Gói một file
-chin document.txt
-# Kết quả: document.chin
-
-# Gói một thư mục
-chin my-folder
-# Kết quả: my-folder.chin
+chin <file/folder>
 ```
 
-### Gói nhiều file/thư mục
+**Ví dụ:**
 
 ```bash
-# Gói nhiều file và thư mục
-chin file1.txt file2.pdf folder1 folder2
-# Kết quả: file1-all.chin
+chin document.txt          # Tạo ra document.chin
+chin my-folder/            # Tạo ra my-folder.chin
 ```
 
-### Gói với chia nhỏ file
+#### Đóng gói nhiều file/thư mục:
 
 ```bash
-# Chia nhỏ thành các file tối đa 100MB
-chin -mb 100 large-folder
-# Kết quả: large-folder-1.chin, large-folder-2.chin, ...
-
-# Chia nhỏ nhiều file
-chin -mb 500 file1.txt folder1 folder2
-# Kết quả: file1-all-1.chin, file1-all-2.chin, ...
+chin <file1> <file2> <folder1> ...
 ```
 
-### Giải gói
+**Ví dụ:**
 
 ```bash
-# Giải gói file thông thường
-chin archive.chin
-
-# Giải gói file chia nhỏ (từ bất kỳ part nào)
-chin data-1.chin
-chin data-5.chin  # Tự động tìm tất cả các part
+chin file1.txt file2.txt folder1/ folder2/
+# Tạo ra file1-all.chin
 ```
 
-## Xử lý lỗi
-
-### Phát hiện file bị thiếu
+#### Đóng gói với tính năng chia nhỏ:
 
 ```bash
-# Nếu thiếu part file, sẽ báo lỗi:
-chin data-1.chin
-# Error: missing part files: data-[2,3].chin
+chin -mb <kích_thước_MB> <file/folder>
 ```
 
-### Kiểm tra tính toàn vẹn
-
--   Tự động kiểm tra từng part file có thể đọc được
--   Phát hiện dữ liệu bị corrupt
--   Cảnh báo nếu part cuối có kích thước bất thường
-
-## Hiệu suất
-
--   **Gói nhanh**: Không sử dụng thuật toán gói phức tạp, ưu tiên tốc độ
--   **Ít RAM**: Xử lý từng file một, không load toàn bộ vào memory
--   **Progress bar**: Hiển thị tiến trình real-time
--   **Parallel processing**: Có thể mở rộng để xử lý song song
-
-## Lưu ý quan trọng
-
-2. **Đường dẫn tương đối**: Giữ nguyên cấu trúc thư mục gốc
-3. **File split**: Các part file phải liên tục (1, 2, 3, ...)
-4. **Platform**: Đường dẫn file được chuẩn hóa theo OS
-
-## Troubleshooting
-
-### Lỗi thường gặp
-
-**"missing part files"**
+**Ví dụ:**
 
 ```bash
-# Đảm bảo tất cả part files có mặt
-ls data-*.chin
-# data-1.chin  data-2.chin  data-3.chin
+chin -mb 100 large-folder/
+# Tạo ra: large-folder-1.chin, large-folder-2.chin, ...
 ```
 
-**"corrupted data"**
+### Giải gói dữ liệu
+
+#### Giải gói file thông thường:
 
 ```bash
-# File có thể bị hỏng, thử gói lại
-chin -mb 100 original-folder
+chin file.chin
 ```
 
-**"failed to create directory"**
+#### Giải gói file đã chia nhỏ:
 
 ```bash
-# Kiểm tra quyền ghi trong thư mục hiện tại
-ls -la
+chin file-1.chin
+# Tự động tìm và kết hợp tất cả các phần: file-1.chin, file-2.chin, ...
 ```
+
+## 💡 Ví dụ thực tế
+
+### Đóng gói một dự án web:
+
+```bash
+chin my-website/
+# Output: my-website.chin
+```
+
+### Đóng gói nhiều file cấu hình:
+
+```bash
+chin config.json settings.ini database.sql
+# Output: config-all.chin
+```
+
+### Đóng gói và chia nhỏ file lớn:
+
+```bash
+chin -mb 50 backup-data/
+# Output: backup-data-1.chin, backup-data-2.chin, backup-data-3.chin, ...
+```
+
+### Giải gói:
+
+```bash
+chin my-website.chin        # Giải gói file thông thường
+chin backup-data-1.chin     # Giải gói file đã chia nhỏ
+```
+
+## 📋 Cấu trúc file .chin
+
+File .chin sử dụng format binary tùy chỉnh:
+
+-   Header chứa độ dài đường dẫn (uint16)
+-   Đường dẫn file/thư mục
+-   Độ dài dữ liệu (uint32)
+-   Dữ liệu file (nếu là file) hoặc 0 bytes (nếu là thư mục)
+
+## 🎯 Tùy chọn dòng lệnh
+
+| Tùy chọn     | Mô tả                                                       | Ví dụ                  |
+| ------------ | ----------------------------------------------------------- | ---------------------- |
+| `-mb <size>` | Chia file đóng gói thành các phần có kích thước `<size>` MB | `chin -mb 100 folder/` |
+
+## 🔧 Yêu cầu hệ thống
+
+-   Go 1.16 trở lên
+-   Hệ điều hành: Windows, macOS, Linux
+-   Terminal hỗ trợ ANSI colors (cho hiển thị màu sắc)
+
+## 📊 Thông tin hiển thị
+
+Chương trình hiển thị các thông tin chi tiết:
+
+-   📊 Số lượng entries được xử lý
+-   📈 Thanh tiến trình realtime
+-   💾 Kích thước file và thời gian xử lý
+-   ✅ Trạng thái thành công/lỗi với màu sắc
+-   🔍 Thông tin phân tích và xác minh dữ liệu
+
+## ⚠️ Lưu ý
+
+1. **File output**: Luôn được tạo trong thư mục hiện tại
+2. **Đường dẫn tương đối**: Được bảo toàn trong file đóng gói
+3. **File chia nhỏ**: Phải có đầy đủ tất cả các phần để giải gói
+4. **Quyền truy cập**: Đảm bảo có quyền đọc/ghi trong thư mục làm việc
+
+## 🐛 Xử lý lỗi
+
+-   Kiểm tra tính toàn vẹn của file chia nhỏ
+-   Xác minh cấu trúc dữ liệu trước khi giải gói
+-   Hiển thị thông báo lỗi chi tiết với màu sắc
+-   Tự động phát hiện file bị thiếu hoặc hỏng
+
+## 📞 Hỗ trợ
+
+Nếu gặp vấn đề, hãy kiểm tra:
+
+1. Quyền truy cập file/thư mục
+2. Dung lượng ổ đĩa còn trống
+3. Tính toàn vẹn của file .chin
+4. Đầy đủ các file phần (đối với file chia nhỏ)
+
+---
+
+_CHIN Packer - Công cụ đóng gói dữ liệu mạnh mẽ và thân thiện với người dùng! 🚀_
